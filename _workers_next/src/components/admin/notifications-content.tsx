@@ -15,6 +15,7 @@ interface NotificationsContentProps {
         telegramBotToken: string
         telegramChatId: string
         telegramLanguage: string
+        telegramEnabled: boolean
         barkEnabled: boolean
         barkServerUrl: string
         barkDeviceKey: string
@@ -31,6 +32,7 @@ export function NotificationsContent({ settings }: NotificationsContentProps) {
     const [token, setToken] = useState(settings.telegramBotToken || '')
     const [chatId, setChatId] = useState(settings.telegramChatId || '')
     const [language, setLanguage] = useState(settings.telegramLanguage || 'zh')
+    const [telegramEnabled, setTelegramEnabled] = useState(settings.telegramEnabled || false)
     const [isLoading, setIsLoading] = useState(false)
     const [isTesting, setIsTesting] = useState(false)
     const [isTestingBark, setIsTestingBark] = useState(false)
@@ -156,6 +158,18 @@ export function NotificationsContent({ settings }: NotificationsContentProps) {
                 </CardHeader>
                 <CardContent>
                     <form action={handleSave} className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="telegramEnabledCheckbox"
+                                checked={telegramEnabled}
+                                onChange={(e) => setTelegramEnabled(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300"
+                            />
+                            <input type="hidden" name="telegramEnabled" value={telegramEnabled ? 'true' : 'false'} />
+                            <Label htmlFor="telegramEnabledCheckbox">{t('admin.settings.notifications.telegramEnabled')}</Label>
+                        </div>
+
                         <div className="floating-field">
                             <Input
                                 name="telegramBotToken"
@@ -214,7 +228,7 @@ export function NotificationsContent({ settings }: NotificationsContentProps) {
                                 {isLoading ? t('common.processing') : t('admin.settings.notifications.save')}
                             </Button>
 
-                            {token && chatId && (
+                            {telegramEnabled && token && chatId && (
                                 <Button type="button" variant="secondary" onClick={handleTest} disabled={isTesting}>
                                     {isTesting ? t('common.processing') : t('admin.settings.notifications.test')}
                                 </Button>
@@ -268,12 +282,14 @@ export function NotificationsContent({ settings }: NotificationsContentProps) {
                             />
                             <Label className="floating-label">{t('admin.settings.notifications.barkDeviceKey')}</Label>
                             <p className="text-xs text-muted-foreground">{t('admin.settings.notifications.barkDeviceKeyHint')}</p>
+                            <p className="text-xs text-muted-foreground">{t('admin.settings.notifications.barkDeviceKeyExample')}</p>
                         </div>
 
                         {/* Hidden fields for telegram settings */}
                         <input type="hidden" name="telegramBotToken" value={token} />
                         <input type="hidden" name="telegramChatId" value={chatId} />
                         <input type="hidden" name="telegramLanguage" value={language} />
+                        <input type="hidden" name="telegramEnabled" value={telegramEnabled ? 'true' : 'false'} />
                         {/* Hidden fields for email settings */}
                         <input type="hidden" name="resendEnabled" value={resendEnabled ? 'true' : 'false'} />
                         <input type="hidden" name="resendApiKey" value={resendApiKey} />
@@ -381,6 +397,7 @@ export function NotificationsContent({ settings }: NotificationsContentProps) {
                         <input type="hidden" name="telegramBotToken" value={token} />
                         <input type="hidden" name="telegramChatId" value={chatId} />
                         <input type="hidden" name="telegramLanguage" value={language} />
+                        <input type="hidden" name="telegramEnabled" value={telegramEnabled ? 'true' : 'false'} />
                         {/* Hidden fields for bark settings */}
                         <input type="hidden" name="barkEnabled" value={barkEnabled ? 'true' : 'false'} />
                         <input type="hidden" name="barkServerUrl" value={barkServerUrl} />

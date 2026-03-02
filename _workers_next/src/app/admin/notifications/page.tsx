@@ -15,6 +15,7 @@ export default async function NotificationsPage() {
             telegramBotToken: settings.token || '',
             telegramChatId: settings.chatId || '',
             telegramLanguage: settings.language || 'zh',
+            telegramEnabled: settings.telegramEnabled || false,
             barkEnabled: settings.barkEnabled || false,
             barkServerUrl: settings.barkServerUrl || 'https://api.day.app',
             barkDeviceKey: settings.barkDeviceKey || '',

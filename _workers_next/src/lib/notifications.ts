@@ -1,31 +1,55 @@
-import { getSetting } from "./db/queries"
+import { db } from "./db"
+import { settings } from "./db/schema"
+import { inArray } from "drizzle-orm"
+
+async function getSettingsUncached(keys: string[]): Promise<Record<string, string>> {
+    try {
+        const rows = await db.select({ key: settings.key, value: settings.value })
+            .from(settings)
+            .where(inArray(settings.key, keys))
+
+        const map: Record<string, string> = {}
+        for (const row of rows) {
+            map[row.key] = row.value || ""
+        }
+        return map
+    } catch (error: any) {
+        const text = `${error?.message || ""}${JSON.stringify(error || {})}`.toLowerCase()
+        if (text.includes("no such table") && text.includes("settings")) {
+            return {}
+        }
+        throw error
+    }
+}
 
 export async function getNotificationSettings() {
-    const [
-        token,
-        chatId,
-        languageRaw,
-        barkEnabledRaw,
-        barkServerUrlRaw,
-        barkDeviceKeyRaw
-    ] = await Promise.all([
-        getSetting('telegram_bot_token'),
-        getSetting('telegram_chat_id'),
-        getSetting('telegram_language'),
-        getSetting('bark_enabled'),
-        getSetting('bark_server_url'),
-        getSetting('bark_device_key')
+    const values = await getSettingsUncached([
+        'telegram_bot_token',
+        'telegram_chat_id',
+        'telegram_language',
+        'telegram_enabled',
+        'bark_enabled',
+        'bark_server_url',
+        'bark_device_key',
     ])
 
-    const language = languageRaw || 'zh' // 默认中文
-    const barkEnabled = barkEnabledRaw === 'true'
-    const barkServerUrl = (barkServerUrlRaw || 'https://api.day.app').trim() || 'https://api.day.app'
-    const barkDeviceKey = (barkDeviceKeyRaw || '').trim()
+    const token = (values.telegram_bot_token || '').trim()
+    const chatId = (values.telegram_chat_id || '').trim()
+    const language = values.telegram_language || 'zh' // 默认中文
+    // Backward compatible: if explicit switch not set, treat configured token+chat as enabled.
+    const telegramEnabledRaw = values.telegram_enabled
+    const telegramEnabled =
+        telegramEnabledRaw === 'true' ||
+        (telegramEnabledRaw !== 'false' && !!token && !!chatId)
+    const barkEnabled = values.bark_enabled === 'true'
+    const barkServerUrl = (values.bark_server_url || 'https://api.day.app').trim() || 'https://api.day.app'
+    const barkDeviceKey = (values.bark_device_key || '').trim()
 
     return {
         token,
         chatId,
         language,
+        telegramEnabled,
         barkEnabled,
         barkServerUrl,
         barkDeviceKey
@@ -34,7 +58,12 @@ export async function getNotificationSettings() {
 
 export async function sendTelegramMessage(text: string) {
     try {
-        const { token, chatId } = await getNotificationSettings()
+        const { telegramEnabled, token, chatId } = await getNotificationSettings()
+
+        if (!telegramEnabled) {
+            console.log('[Notification] Telegram skipped: disabled')
+            return { success: false, error: 'Telegram disabled' }
+        }
 
         if (!token || !chatId) {
             console.log('[Notification] Skipped: Missing token or chat_id')

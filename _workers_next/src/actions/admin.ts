@@ -662,10 +662,12 @@ export async function saveNotificationSettings(formData: FormData) {
     const token = (formData.get('telegramBotToken') as string || '').trim()
     const chatId = (formData.get('telegramChatId') as string || '').trim()
     const language = (formData.get('telegramLanguage') as string || 'zh').trim()
+    const telegramEnabled = formData.get('telegramEnabled') === 'true'
 
     await setSetting('telegram_bot_token', token)
     await setSetting('telegram_chat_id', chatId)
     await setSetting('telegram_language', language)
+    await setSetting('telegram_enabled', telegramEnabled ? 'true' : 'false')
 
     // Bark settings
     const barkEnabled = formData.get('barkEnabled') === 'true'
